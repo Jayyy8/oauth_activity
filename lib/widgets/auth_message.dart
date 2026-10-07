@@ -1,32 +1,39 @@
 import "package:flutter/cupertino.dart";
 import "package:flutter_riverpod/flutter_riverpod.dart";
-import "package:liquid_glass_widgets/liquid_glass_widgets.dart";
 
 import "../providers/auth_controller.dart";
 
-/// A glass card holding a short message (text only, no buttons inside).
+/// A short message shown as plain text (no box).
 class AuthNotice extends StatelessWidget {
   final String message;
   final bool isError;
 
-  const AuthNotice({super.key, required this.message, this.isError = false});
+  /// Overrides the default red / green color.
+  final Color? color;
+
+  const AuthNotice({
+    super.key,
+    required this.message,
+    this.isError = false,
+    this.color,
+  });
 
   @override
   Widget build(BuildContext context) {
     return SizedBox(
       width: double.infinity,
-      child: GlassCard(
-        child: Padding(
-          padding: const EdgeInsets.all(14),
-          child: Text(
-            message,
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 14,
-              color: isError
-                  ? CupertinoColors.destructiveRed
-                  : CupertinoColors.activeGreen,
-            ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 4),
+        child: Text(
+          message,
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            fontSize: 14,
+            height: 1.3,
+            color: color ??
+                (isError
+                    ? CupertinoColors.destructiveRed
+                    : CupertinoColors.activeGreen),
           ),
         ),
       ),
@@ -43,7 +50,10 @@ class AuthMessage extends ConsumerWidget {
     final ui = ref.watch(authControllerProvider);
 
     if (ui.loading) {
-      return const AuthNotice(message: "Please wait...");
+      return const AuthNotice(
+        message: "Please wait...",
+        color: CupertinoColors.systemGrey,
+      );
     }
     if (ui.message == null) return const SizedBox.shrink();
 

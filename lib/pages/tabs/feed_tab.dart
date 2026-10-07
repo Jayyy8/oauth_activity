@@ -3,6 +3,7 @@ import "package:flutter_riverpod/flutter_riverpod.dart";
 import "package:liquid_glass_widgets/liquid_glass_widgets.dart";
 
 import "../../providers/feed_provider.dart";
+import "../../widgets/feed_skeleton.dart";
 import "../../widgets/layout.dart";
 import "../../widgets/post_card.dart";
 import "../../widgets/stories_row.dart";
@@ -12,7 +13,11 @@ class FeedTab extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final loading = ref.watch(feedLoadingProvider);
     final posts = ref.watch(feedProvider);
+
+    // Shimmering placeholders while the feed loads.
+    if (loading) return const FeedSkeleton();
 
     return ListView(
       // Padding keeps the stories clear of the floating app bar.

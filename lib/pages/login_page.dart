@@ -3,8 +3,10 @@ import "package:flutter_riverpod/flutter_riverpod.dart";
 import "package:liquid_glass_widgets/liquid_glass_widgets.dart";
 
 import "../providers/auth_controller.dart";
+import "../widgets/auth_background.dart";
 import "../widgets/auth_button.dart";
 import "../widgets/auth_message.dart";
+import "../widgets/auth_widgets.dart";
 import "otp_page.dart";
 import "register_page.dart";
 import "reset_password_page.dart";
@@ -19,6 +21,7 @@ class LoginPage extends ConsumerStatefulWidget {
 class _LoginPageState extends ConsumerState<LoginPage> {
   final TextEditingController _email = TextEditingController();
   final TextEditingController _password = TextEditingController();
+  String? _localError;
 
   @override
   void initState() {
@@ -35,7 +38,24 @@ class _LoginPageState extends ConsumerState<LoginPage> {
 
   void _push(Widget page) {
     ref.read(authControllerProvider.notifier).clear();
+    setState(() => _localError = null);
     Navigator.of(context).push(CupertinoPageRoute(builder: (_) => page));
+  }
+
+  void _login() {
+    final email = _email.text.trim();
+    if (!isValidEmail(email)) {
+      setState(() => _localError = "Enter a valid email address.");
+      return;
+    }
+    if (_password.text.isEmpty) {
+      setState(() => _localError = "Enter your password.");
+      return;
+    }
+    setState(() => _localError = null);
+    ref
+        .read(authControllerProvider.notifier)
+        .signInWithPassword(email, _password.text);
   }
 
   @override
@@ -44,117 +64,113 @@ class _LoginPageState extends ConsumerState<LoginPage> {
     final loading = ref.watch(authControllerProvider).loading;
 
     return GlassScaffold(
+      background: const AuthBackground(),
       body: SafeArea(
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            return SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: ConstrainedBox(
-                constraints: BoxConstraints(minHeight: constraints.maxHeight),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    // ───── TOP: language, logo, form ─────
-                    Column(
+        child: GestureDetector(
+          behavior: HitTestBehavior.translucent,
+          onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              return SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                child: Center(
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(
+                      maxWidth: 440,
+                      minHeight: constraints.maxHeight,
+                    ),
+                    child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        const SizedBox(height: 20),
-                        const Center(
-                          child: Text(
-                            "English (US)",
-                            style: TextStyle(
-                              fontSize: 13,
-                              color: CupertinoColors.systemGrey,
+                        // ───── TOP: language, logo, form ─────
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            const SizedBox(height: 20),
+                            const Center(
+                              child: Text(
+                                "English (US)",
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  color: CupertinoColors.systemGrey,
+                                ),
+                              ),
                             ),
-                          ),
-                        ),
-                        const SizedBox(height: 50),
-                        Center(
-                          child: ShaderMask(
-                            shaderCallback: (rect) => const LinearGradient(
-                              begin: Alignment.bottomLeft,
-                              end: Alignment.topRight,
-                              colors: [
-                                Color(0xFFFFB000),
-                                Color(0xFFFF2D55),
-                                Color(0xFF8E2DE2),
-                              ],
-                            ).createShader(rect),
-                            child: const Icon(
-                              CupertinoIcons.camera,
-                              size: 80,
-                              color: CupertinoColors.white,
+                            const SizedBox(height: 44),
+                            const Center(child: AuthLogo(size: 52)),
+                            const SizedBox(height: 40),
+                            GlassTextField(
+                              controller: _email,
+                              placeholder: "Email",
                             ),
-                          ),
-                        ),
-                        const SizedBox(height: 50),
-                        GlassTextField(
-                          controller: _email,
-                          placeholder: "Email",
-                        ),
-                        const SizedBox(height: 14),
-                        GlassPasswordField(controller: _password),
-                        const SizedBox(height: 14),
-                        AuthButton(
-                          label: "Log in",
-                          onTap: loading
-                              ? null
-                              : () => controller.signInWithPassword(
-                            _email.text,
-                            _password.text,
-                          ),
-                        ),
-                        const SizedBox(height: 10),
-                        Center(
-                          child: SizedBox(
-                            width: 190,
-                            child: AuthButton(
-                              label: "Forgot password?",
+                            const SizedBox(height: 12),
+                            GlassPasswordField(controller: _password),
+                            const SizedBox(height: 16),
+                            AuthButton(
+                              label: loading ? "Logging in..." : "Log in",
+                              onTap: loading ? null : _login,
+                            ),
+                            const SizedBox(height: 10),
+                            Center(
+                              child: SizedBox(
+                                width: 200,
+                                child: AuthButton(
+                                  label: "Forgot password?",
+                                  outlined: true,
+                                  height: 38,
+                                  onTap: () =>
+                                      _push(const ResetPasswordPage()),
+                                ),
+                              ),
+                            ),
+                            if (_localError != null) ...[
+                              const SizedBox(height: 14),
+                              AuthNotice(message: _localError!, isError: true),
+                            ],
+                            const SizedBox(height: 20),
+                            const OrDivider(),
+                            const SizedBox(height: 20),
+                            AuthButton(
+                              label: "Log in with a code",
+                              icon: CupertinoIcons.number,
                               outlined: true,
-                              height: 38,
-                              onTap: () => _push(const ResetPasswordPage()),
+                              onTap: loading
+                                  ? null
+                                  : () => _push(const OtpPage()),
                             ),
+                            const SizedBox(height: 12),
+                            AuthButton(
+                              label: "Log in with Apple",
+                              icon: CupertinoIcons.person_crop_circle,
+                              outlined: true,
+                              onTap: loading
+                                  ? null
+                                  : () => controller.signInWithApple(),
+                            ),
+                            const SizedBox(height: 16),
+                            const AuthMessage(),
+                          ],
+                        ),
+
+                        // ───── BOTTOM: create account ─────
+                        Padding(
+                          padding: const EdgeInsets.only(top: 28, bottom: 20),
+                          child: AuthButton(
+                            label: "Create new account",
+                            outlined: true,
+                            onTap: loading
+                                ? null
+                                : () => _push(const RegisterPage()),
                           ),
                         ),
-                        const SizedBox(height: 16),
-                        const OrDivider(),
-                        const SizedBox(height: 16),
-                        AuthButton(
-                          label: "Log in with OTP",
-                          icon: CupertinoIcons.number,
-                          outlined: true,
-                          onTap: loading ? null : () => _push(const OtpPage()),
-                        ),
-                        const SizedBox(height: 12),
-                        AuthButton(
-                          label: "Log in with Apple",
-                          icon: CupertinoIcons.person_crop_circle,
-                          outlined: true,
-                          onTap: loading
-                              ? null
-                              : () => controller.signInWithApple(),
-                        ),
-                        const SizedBox(height: 16),
-                        const Center(child: AuthMessage()),
                       ],
                     ),
-
-                    // ───── BOTTOM: create account ─────
-                    Padding(
-                      padding: const EdgeInsets.only(top: 24, bottom: 16),
-                      child: AuthButton(
-                        label: "Create new account",
-                        outlined: true,
-                        onTap:
-                        loading ? null : () => _push(const RegisterPage()),
-                      ),
-                    ),
-                  ],
+                  ),
                 ),
-              ),
-            );
-          },
+              );
+            },
+          ),
         ),
       ),
     );

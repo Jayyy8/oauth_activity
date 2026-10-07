@@ -39,6 +39,7 @@ dependencies:
   supabase_flutter: ^2.18.0
   sign_in_with_apple: ^8.2.0
   crypto: ^3.0.7
+  skeletonizer: ^3.0.0
 
 dev_dependencies:
   flutter_test:

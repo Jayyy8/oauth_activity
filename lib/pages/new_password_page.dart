@@ -6,6 +6,7 @@ import "../providers/auth_controller.dart";
 import "../widgets/auth_button.dart";
 import "../widgets/auth_message.dart";
 import "../widgets/auth_page.dart";
+import "../widgets/auth_widgets.dart";
 
 /// Shown after the recovery code is verified.
 class NewPasswordPage extends ConsumerStatefulWidget {
@@ -23,14 +24,20 @@ class _NewPasswordPageState extends ConsumerState<NewPasswordPage> {
   @override
   void initState() {
     super.initState();
+    _password.addListener(_refresh);
     Future.microtask(() => ref.read(authControllerProvider.notifier).clear());
   }
 
   @override
   void dispose() {
+    _password.removeListener(_refresh);
     _password.dispose();
     _confirm.dispose();
     super.dispose();
+  }
+
+  void _refresh() {
+    if (mounted) setState(() {});
   }
 
   Future<void> _save() async {
@@ -54,15 +61,23 @@ class _NewPasswordPageState extends ConsumerState<NewPasswordPage> {
     final loading = ref.watch(authControllerProvider).loading;
 
     return AuthPage(
-      title: "New password",
-      subtitle: "Choose a new password for your account.",
+      icon: CupertinoIcons.lock_shield,
+      title: "Create a new password",
+      subtitle: "Choose a strong password you haven't used before.",
       children: [
-        GlassPasswordField(controller: _password),
-        const SizedBox(height: 10),
-        GlassPasswordField(controller: _confirm),
-        const SizedBox(height: 16),
+        GlassPasswordField(
+          controller: _password,
+          placeholder: "New password",
+        ),
+        PasswordStrength(password: _password.text),
+        const SizedBox(height: 12),
+        GlassPasswordField(
+          controller: _confirm,
+          placeholder: "Confirm password",
+        ),
+        const SizedBox(height: 18),
         AuthButton(
-          label: "Update password",
+          label: loading ? "Saving..." : "Update password",
           icon: CupertinoIcons.lock_rotation,
           onTap: loading ? null : _save,
         ),
@@ -72,11 +87,11 @@ class _NewPasswordPageState extends ConsumerState<NewPasswordPage> {
           outlined: true,
           onTap: loading ? null : () => controller.cancelRecovery(),
         ),
-        const SizedBox(height: 16),
         if (_localError != null) ...[
+          const SizedBox(height: 16),
           AuthNotice(message: _localError!, isError: true),
-          const SizedBox(height: 10),
         ],
+        const SizedBox(height: 16),
         const AuthMessage(),
       ],
     );

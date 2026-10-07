@@ -6,6 +6,7 @@ import "../providers/auth_controller.dart";
 import "../widgets/auth_button.dart";
 import "../widgets/auth_message.dart";
 import "../widgets/auth_page.dart";
+import "../widgets/auth_widgets.dart";
 
 class OtpPage extends ConsumerStatefulWidget {
   const OtpPage({super.key});
@@ -18,6 +19,7 @@ class _OtpPageState extends ConsumerState<OtpPage> {
   final TextEditingController _email = TextEditingController();
   final TextEditingController _code = TextEditingController();
   bool _codeSent = false;
+  String? _localError;
 
   @override
   void initState() {
@@ -33,9 +35,33 @@ class _OtpPageState extends ConsumerState<OtpPage> {
   }
 
   Future<void> _sendCode() async {
-    final ok =
-    await ref.read(authControllerProvider.notifier).sendOtp(_email.text);
+    final email = _email.text.trim();
+    if (!isValidEmail(email)) {
+      setState(() => _localError = "Enter a valid email address.");
+      return;
+    }
+    setState(() => _localError = null);
+    final ok = await ref.read(authControllerProvider.notifier).sendOtp(email);
     if (ok && mounted) setState(() => _codeSent = true);
+  }
+
+  void _verify() {
+    final digits = _code.text.replaceAll(RegExp(r"\D"), "");
+    if (digits.length != 8) {
+      setState(() => _localError = "Enter the 8-digit code from your email.");
+      return;
+    }
+    setState(() => _localError = null);
+    ref.read(authControllerProvider.notifier).verifyOtp(_email.text, digits);
+  }
+
+  void _changeEmail() {
+    _code.clear();
+    ref.read(authControllerProvider.notifier).clear();
+    setState(() {
+      _codeSent = false;
+      _localError = null;
+    });
   }
 
   @override
@@ -44,28 +70,46 @@ class _OtpPageState extends ConsumerState<OtpPage> {
     final loading = ref.watch(authControllerProvider).loading;
 
     return AuthPage(
-      title: "OTP Login",
+      icon: _codeSent ? CupertinoIcons.lock_shield : CupertinoIcons.mail,
+      title: _codeSent ? "Enter your code" : "Log in with a code",
+      subtitle: _codeSent
+          ? "We sent an 8-digit code to ${_email.text.trim()}."
+          : "We'll email you an 8-digit code. No password needed.",
       showBack: true,
+      step: _codeSent ? 1 : 0,
       children: [
-        GlassTextField(controller: _email, placeholder: "Email"),
-        const SizedBox(height: 10),
-        if (_codeSent) ...[
-          GlassTextField(controller: _code, placeholder: "8-digit code"),
-          const SizedBox(height: 16),
+        if (!_codeSent) ...[
+          GlassTextField(controller: _email, placeholder: "Email"),
+          const SizedBox(height: 18),
           AuthButton(
-            label: "Verify code",
+            label: loading ? "Sending..." : "Send code",
+            icon: CupertinoIcons.paperplane,
+            onTap: loading ? null : _sendCode,
+          ),
+        ] else ...[
+          CodeInput(controller: _code),
+          const SizedBox(height: 18),
+          AuthButton(
+            label: loading ? "Checking..." : "Verify and log in",
             icon: CupertinoIcons.checkmark_shield,
-            onTap: loading
-                ? null
-                : () => controller.verifyOtp(_email.text, _code.text),
+            onTap: loading ? null : _verify,
           ),
           const SizedBox(height: 10),
+          ResendButton(
+            label: "Resend code",
+            onResend: () => controller.sendOtp(_email.text),
+          ),
+          const SizedBox(height: 10),
+          AuthButton(
+            label: "Change email",
+            outlined: true,
+            onTap: loading ? null : _changeEmail,
+          ),
         ],
-        AuthButton(
-          label: _codeSent ? "Resend code" : "Send code",
-          icon: CupertinoIcons.paperplane,
-          onTap: loading ? null : _sendCode,
-        ),
+        if (_localError != null) ...[
+          const SizedBox(height: 16),
+          AuthNotice(message: _localError!, isError: true),
+        ],
         const SizedBox(height: 16),
         const AuthMessage(),
       ],

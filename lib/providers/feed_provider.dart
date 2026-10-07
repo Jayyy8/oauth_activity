@@ -1,3 +1,4 @@
+import "dart:async";
 import "dart:math";
 
 import "package:flutter_riverpod/flutter_riverpod.dart";
@@ -14,6 +15,24 @@ final authorProvider = Provider<String>((ref) {
   if (email != null && email.isNotEmpty) return email;
   return user?.id ?? "unknown";
 });
+
+/// True while the feed is "loading" (shows the skeleton).
+/// The feed data is local sample data, so this simulates a short fetch.
+/// Change the duration below to make it faster or slower.
+class FeedLoadingNotifier extends Notifier<bool> {
+  Timer? _timer;
+
+  @override
+  bool build() {
+    ref.watch(authorProvider); // load again when a different user signs in
+    ref.onDispose(() => _timer?.cancel());
+    _timer = Timer(const Duration(milliseconds: 1500), () => state = false);
+    return true;
+  }
+}
+
+final feedLoadingProvider =
+NotifierProvider<FeedLoadingNotifier, bool>(FeedLoadingNotifier.new);
 
 class FeedNotifier extends Notifier<List<FeedPost>> {
   @override

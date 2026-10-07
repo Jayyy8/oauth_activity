@@ -1,7 +1,11 @@
 import "package:flutter/cupertino.dart";
+import "package:skeletonizer/skeletonizer.dart";
+
+import "feed_skeleton.dart";
 
 /// Network photo that tries each URL in [urls] until one loads,
 /// so a failed download falls back instead of leaving a blank.
+/// While a photo downloads, a shimmering placeholder is shown.
 class FeedImage extends StatefulWidget {
   final List<String> urls;
   final BoxFit fit;
@@ -33,7 +37,7 @@ class _FeedImageState extends State<FeedImage> {
   @override
   Widget build(BuildContext context) {
     if (widget.urls.isEmpty || _index >= widget.urls.length) {
-      return const _Placeholder(failed: true);
+      return const _FailedPlaceholder();
     }
 
     final int current = _index;
@@ -47,23 +51,42 @@ class _FeedImageState extends State<FeedImage> {
       width: double.infinity,
       height: double.infinity,
       loadingBuilder: (context, child, progress) {
-        return progress == null ? child : const _Placeholder(failed: false);
+        return progress == null ? child : const _LoadingPlaceholder();
       },
       errorBuilder: (context, error, stackTrace) {
         // Try the next URL after this frame.
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (mounted && _index == current) setState(() => _index++);
         });
-        return const _Placeholder(failed: false);
+        return const _LoadingPlaceholder();
       },
     );
   }
 }
 
-class _Placeholder extends StatelessWidget {
-  final bool failed;
+/// Shimmering box shown while a photo downloads.
+class _LoadingPlaceholder extends StatelessWidget {
+  const _LoadingPlaceholder();
 
-  const _Placeholder({required this.failed});
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final width = constraints.maxWidth.isFinite ? constraints.maxWidth : 100.0;
+        final height =
+        constraints.maxHeight.isFinite ? constraints.maxHeight : width;
+
+        return Skeletonizer.zone(
+          effect: skeletonEffect(context),
+          child: Bone(width: width, height: height),
+        );
+      },
+    );
+  }
+}
+
+class _FailedPlaceholder extends StatelessWidget {
+  const _FailedPlaceholder();
 
   @override
   Widget build(BuildContext context) {
@@ -72,14 +95,12 @@ class _Placeholder extends StatelessWidget {
 
     return ColoredBox(
       color: isDark ? const Color(0xFF1C1C1F) : const Color(0xFFE9E9EE),
-      child: Center(
-        child: failed
-            ? const Icon(
+      child: const Center(
+        child: Icon(
           CupertinoIcons.photo,
           color: CupertinoColors.systemGrey,
           size: 40,
-        )
-            : const SizedBox.shrink(),
+        ),
       ),
     );
   }
