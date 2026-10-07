@@ -1,10 +1,12 @@
+import "dart:math";
+
 import "package:flutter_riverpod/flutter_riverpod.dart";
 
 import "../data/sample_feed.dart";
 import "../models/feed_models.dart";
 import "supabase_providers.dart";
 
-/// The name shown on every post: the user's email, or the ID if no email.
+/// The logged-in user's email, or their ID if there is no email.
 final authorProvider = Provider<String>((ref) {
   ref.watch(authStateProvider); // recompute when someone signs in or out
   final user = ref.watch(supabaseProvider).auth.currentUser;
@@ -49,16 +51,19 @@ class FeedNotifier extends Notifier<List<FeedPost>> {
     state = state.where((p) => p.id != id).toList();
   }
 
+  /// Creates a post by the logged-in user, with a photo from the topic.
   void addPost({
     required String caption,
     required String location,
     required FeedCategory category,
   }) {
-    final seed = DateTime.now().millisecondsSinceEpoch % 100000;
+    final pool = kPhotoPool[category]!;
+    final photo = pool[Random().nextInt(pool.length)];
+
     final post = FeedPost(
-      id: "n$seed",
+      id: "n${DateTime.now().millisecondsSinceEpoch}",
       category: category,
-      imageUrl: photoUrl(category, seed),
+      imageUrls: photo,
       caption: caption.trim().isEmpty ? "New post" : caption.trim(),
       location: location.trim().isEmpty ? "Somewhere" : location.trim(),
       timeAgo: "Just now",
@@ -70,6 +75,21 @@ class FeedNotifier extends Notifier<List<FeedPost>> {
 
 final feedProvider =
 NotifierProvider<FeedNotifier, List<FeedPost>>(FeedNotifier.new);
+
+/// Channels the user follows (by handle).
+class FollowNotifier extends Notifier<Set<String>> {
+  @override
+  Set<String> build() => {};
+
+  void toggle(String handle) {
+    final next = {...state};
+    if (!next.remove(handle)) next.add(handle);
+    state = next;
+  }
+}
+
+final followedProvider =
+NotifierProvider<FollowNotifier, Set<String>>(FollowNotifier.new);
 
 /// Stories the user already opened (their ring turns grey).
 class SeenStoriesNotifier extends Notifier<Set<String>> {

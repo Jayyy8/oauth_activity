@@ -2,7 +2,6 @@ import "package:flutter/cupertino.dart";
 import "package:flutter_riverpod/flutter_riverpod.dart";
 import "package:liquid_glass_widgets/liquid_glass_widgets.dart";
 
-import "../../providers/auth_controller.dart";
 import "../../providers/feed_provider.dart";
 import "../../providers/supabase_providers.dart";
 import "../../widgets/auth_button.dart";
@@ -10,6 +9,7 @@ import "../../widgets/gradient_avatar.dart";
 import "../../widgets/layout.dart";
 import "../../widgets/logout_dialog.dart";
 import "../../widgets/post_grid.dart";
+import "../../widgets/user_info_dialog.dart";
 
 class ProfileTab extends ConsumerStatefulWidget {
   const ProfileTab({super.key});
@@ -19,18 +19,18 @@ class ProfileTab extends ConsumerStatefulWidget {
 }
 
 class _ProfileTabState extends ConsumerState<ProfileTab> {
-  int _section = 0; // 0 = Posts, 1 = Saved
+  int _section = 0; // 0 = Posts (yours), 1 = Saved
 
   @override
   Widget build(BuildContext context) {
-    final posts = ref.watch(feedProvider);
+    final allPosts = ref.watch(feedProvider);
     final author = ref.watch(authorProvider);
     final user = ref.watch(supabaseProvider).auth.currentUser;
-    final controller = ref.read(authControllerProvider.notifier);
+    final following = ref.watch(followedProvider);
 
-    final saved = posts.where((p) => p.saved).toList();
-    final totalLikes = posts.fold<int>(0, (sum, p) => sum + p.likes);
-    final shown = _section == 0 ? posts : saved;
+    final mine = allPosts.where((p) => p.mine).toList();
+    final saved = allPosts.where((p) => p.saved).toList();
+    final shown = _section == 0 ? mine : saved;
 
     return ListView(
       padding: contentInsets(context, horizontal: 16),
@@ -43,8 +43,8 @@ class _ProfileTabState extends ConsumerState<ProfileTab> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceAround,
                 children: [
-                  _Stat(value: "${posts.length}", label: "Posts"),
-                  _Stat(value: "$totalLikes", label: "Likes"),
+                  _Stat(value: "${mine.length}", label: "Posts"),
+                  _Stat(value: "${following.length}", label: "Following"),
                   _Stat(value: "${saved.length}", label: "Saved"),
                 ],
               ),
@@ -68,7 +68,7 @@ class _ProfileTabState extends ConsumerState<ProfileTab> {
               child: AuthButton(
                 label: "Print user",
                 outlined: true,
-                onTap: controller.printCurrentUser, // Print current user
+                onTap: () => showCurrentUserDialog(context, ref),
               ),
             ),
             const SizedBox(width: 10),
@@ -96,7 +96,7 @@ class _ProfileTabState extends ConsumerState<ProfileTab> {
             child: Center(
               child: Text(
                 _section == 0
-                    ? "No posts yet."
+                    ? "No posts yet. Tap + to share your first one."
                     : "Nothing saved yet. Tap the bookmark on a post.",
                 textAlign: TextAlign.center,
               ),

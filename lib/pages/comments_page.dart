@@ -32,7 +32,6 @@ class _CommentsPageState extends ConsumerState<CommentsPage> {
   @override
   Widget build(BuildContext context) {
     final posts = ref.watch(feedProvider);
-    final author = ref.watch(authorProvider);
     final index = posts.indexWhere((p) => p.id == widget.postId);
 
     if (index < 0) {
@@ -59,7 +58,7 @@ class _CommentsPageState extends ConsumerState<CommentsPage> {
               itemCount: comments.length,
               itemBuilder: (context, i) {
                 final c = comments[i];
-                final name = c.author ?? author;
+                final name = c.author ?? "you";
                 return Padding(
                   padding: const EdgeInsets.symmetric(vertical: 8),
                   child: Row(

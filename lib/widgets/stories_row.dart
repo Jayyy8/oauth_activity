@@ -21,7 +21,7 @@ class StoriesRow extends ConsumerWidget {
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 12),
         itemCount: kStoryTopics.length + 1,
-        separatorBuilder: (_, __) => const SizedBox(width: 14),
+        separatorBuilder: (context, index) => const SizedBox(width: 14),
         itemBuilder: (context, index) {
           if (index == 0) {
             return _StoryItem(
@@ -50,7 +50,7 @@ class StoriesRow extends ConsumerWidget {
             avatar: GradientAvatar(
               name: topic.label,
               size: 68,
-              imageUrl: topic.coverUrl,
+              imageUrls: topic.photos.first,
               seen: seen.contains(topic.id),
             ),
           );
@@ -82,7 +82,7 @@ class _StoryItem extends StatelessWidget {
           avatar,
           const SizedBox(height: 6),
           SizedBox(
-            width: 72,
+            width: 76,
             child: Text(
               label,
               maxLines: 1,

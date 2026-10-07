@@ -7,7 +7,7 @@ import "feed_image.dart";
 class GradientAvatar extends StatelessWidget {
   final String name;
   final double size;
-  final String? imageUrl;
+  final List<String>? imageUrls;
   final bool ring;
   final bool seen;
   final bool showPlus;
@@ -16,7 +16,7 @@ class GradientAvatar extends StatelessWidget {
     super.key,
     required this.name,
     this.size = 40,
-    this.imageUrl,
+    this.imageUrls,
     this.ring = true,
     this.seen = false,
     this.showPlus = false,
@@ -26,14 +26,14 @@ class GradientAvatar extends StatelessWidget {
   Widget build(BuildContext context) {
     final bool isDark =
         CupertinoTheme.brightnessOf(context) == Brightness.dark;
-    final Color gap = isDark ? const Color(0xFF151518) : const Color(0xFFFFFFFF);
+    final Color gap = isDark ? const Color(0xFF000000) : const Color(0xFFFFFFFF);
     final Color fill = isDark ? const Color(0xFF2A2A2E) : const Color(0xFFE9E9EE);
     final String initial = name.isNotEmpty ? name[0].toUpperCase() : "?";
 
     final Widget inner = ClipOval(
       child: SizedBox.expand(
-        child: imageUrl != null
-            ? FeedImage(url: imageUrl!)
+        child: imageUrls != null
+            ? FeedImage(urls: imageUrls!)
             : ColoredBox(
           color: fill,
           child: Center(

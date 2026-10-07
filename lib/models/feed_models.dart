@@ -1,4 +1,4 @@
-enum FeedCategory { nba, football, news, tennis }
+enum FeedCategory { nba, football, news, docs }
 
 extension FeedCategoryX on FeedCategory {
   String get label {
@@ -9,40 +9,35 @@ extension FeedCategoryX on FeedCategory {
         return "Football";
       case FeedCategory.news:
         return "News";
-      case FeedCategory.tennis:
-        return "Tennis";
-    }
-  }
-
-  /// Keyword used to pick a matching photo.
-  String get keyword {
-    switch (this) {
-      case FeedCategory.nba:
-        return "basketball";
-      case FeedCategory.football:
-        return "soccer";
-      case FeedCategory.news:
-        return "newspaper";
-      case FeedCategory.tennis:
-        return "tennis";
+      case FeedCategory.docs:
+        return "Docs";
     }
   }
 }
 
-/// Real photo matched to a topic. The same [seed] always gives the same photo.
-/// To use your own images, just return your own URL here.
-String photoUrl(
-    FeedCategory category,
-    int seed, {
-      int width = 1000,
-      int height = 1250,
-    }) =>
-    "https://loremflickr.com/$width/$height/${category.keyword}?lock=$seed";
+/// 12840 -> "12,840"
+String formatCount(int n) {
+  final s = n.toString();
+  final buffer = StringBuffer();
+  for (int i = 0; i < s.length; i++) {
+    if (i > 0 && (s.length - i) % 3 == 0) buffer.write(",");
+    buffer.write(s[i]);
+  }
+  return buffer.toString();
+}
 
 /// "name@email.com" -> "name", long IDs -> first 8 characters.
 String shortName(String full) {
   if (full.contains("@")) return full.split("@").first;
   return full.length > 8 ? full.substring(0, 8) : full;
+}
+
+/// A news / sports / documentary account that "posts" in the feed.
+class FeedChannel {
+  final String handle;
+  final bool verified;
+
+  const FeedChannel(this.handle, {this.verified = true});
 }
 
 class FeedComment {
@@ -56,7 +51,12 @@ class FeedComment {
 class FeedPost {
   final String id;
   final FeedCategory category;
-  final String imageUrl;
+
+  /// null = a post created by the logged-in user.
+  final FeedChannel? channel;
+
+  /// Tried in order: if the first photo fails to load, the next one is used.
+  final List<String> imageUrls;
   final String caption;
   final String location;
   final String timeAgo;
@@ -68,16 +68,19 @@ class FeedPost {
   const FeedPost({
     required this.id,
     required this.category,
-    required this.imageUrl,
+    required this.imageUrls,
     required this.caption,
     required this.location,
     required this.timeAgo,
     required this.baseLikes,
+    this.channel,
     this.liked = false,
     this.saved = false,
     this.comments = const [],
   });
 
+  bool get mine => channel == null;
+  String get authorName => channel?.handle ?? "you";
   int get likes => baseLikes + (liked ? 1 : 0);
 
   FeedPost copyWith({
@@ -88,7 +91,8 @@ class FeedPost {
     return FeedPost(
       id: id,
       category: category,
-      imageUrl: imageUrl,
+      channel: channel,
+      imageUrls: imageUrls,
       caption: caption,
       location: location,
       timeAgo: timeAgo,
@@ -104,20 +108,16 @@ class StoryTopic {
   final String id;
   final String label;
   final FeedCategory category;
-  final List<int> seeds;
+  final FeedChannel channel;
 
-  const StoryTopic({
+  /// One entry per story photo; each entry is a list of fallback URLs.
+  final List<List<String>> photos;
+
+  StoryTopic({
     required this.id,
     required this.label,
     required this.category,
-    required this.seeds,
+    required this.channel,
+    required this.photos,
   });
-
-  String get coverUrl =>
-      photoUrl(category, seeds.first, width: 300, height: 300);
-
-  List<String> get photos => [
-    for (final s in seeds)
-      photoUrl(category, s, width: 1080, height: 1920),
-  ];
 }

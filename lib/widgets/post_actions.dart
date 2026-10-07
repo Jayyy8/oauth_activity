@@ -9,7 +9,7 @@ import "../providers/feed_provider.dart";
 
 /// Copies the post link to the clipboard and confirms with a dialog.
 Future<void> sharePost(BuildContext context, FeedPost post) async {
-  await Clipboard.setData(ClipboardData(text: post.imageUrl));
+  await Clipboard.setData(ClipboardData(text: post.imageUrls.first));
   if (!context.mounted) return;
 
   GlassDialog.show(

@@ -5,6 +5,7 @@ import "../models/feed_models.dart";
 import "../providers/feed_provider.dart";
 import "feed_icon_button.dart";
 import "feed_image.dart";
+import "follow_button.dart";
 import "gradient_avatar.dart";
 import "post_actions.dart";
 
@@ -31,34 +32,52 @@ class _PostCardState extends ConsumerState<PostCard> {
   @override
   Widget build(BuildContext context) {
     final post = widget.post;
-    final author = ref.watch(authorProvider);
+    final channel = post.channel;
+    final name = post.authorName;
+    final followed = ref.watch(followedProvider);
     final notifier = ref.read(feedProvider.notifier);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // ───── Header ─────
+        // ───── Header: channel, location, follow, more ─────
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
           child: Row(
             children: [
-              GradientAvatar(name: author, size: 38),
+              GradientAvatar(name: name, size: 38),
               const SizedBox(width: 10),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      author,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                      ),
+                    Row(
+                      children: [
+                        Flexible(
+                          child: Text(
+                            name,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                        if (channel != null && channel.verified) ...[
+                          const SizedBox(width: 4),
+                          const Icon(
+                            CupertinoIcons.checkmark_seal_fill,
+                            size: 14,
+                            color: CupertinoColors.systemBlue,
+                          ),
+                        ],
+                      ],
                     ),
                     Text(
                       post.location,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
                         fontSize: 12,
                         color: CupertinoColors.systemGrey,
@@ -67,6 +86,15 @@ class _PostCardState extends ConsumerState<PostCard> {
                   ],
                 ),
               ),
+              if (channel != null) ...[
+                FollowButton(
+                  following: followed.contains(channel.handle),
+                  onTap: () => ref
+                      .read(followedProvider.notifier)
+                      .toggle(channel.handle),
+                ),
+                const SizedBox(width: 8),
+              ],
               FeedIconButton(
                 icon: CupertinoIcons.ellipsis,
                 label: "More",
@@ -84,7 +112,7 @@ class _PostCardState extends ConsumerState<PostCard> {
             child: Stack(
               fit: StackFit.expand,
               children: [
-                FeedImage(url: post.imageUrl),
+                FeedImage(urls: post.imageUrls),
                 IgnorePointer(
                   child: Center(
                     child: AnimatedScale(
@@ -151,7 +179,7 @@ class _PostCardState extends ConsumerState<PostCard> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                "${post.likes} likes",
+                "${formatCount(post.likes)} likes",
                 style: const TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
@@ -162,7 +190,7 @@ class _PostCardState extends ConsumerState<PostCard> {
                 TextSpan(
                   children: [
                     TextSpan(
-                      text: "$author ",
+                      text: "$name ",
                       style: const TextStyle(fontWeight: FontWeight.w600),
                     ),
                     TextSpan(text: post.caption),

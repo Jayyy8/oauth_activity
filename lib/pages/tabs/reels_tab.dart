@@ -36,9 +36,9 @@ class _ReelPage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final author = ref.watch(authorProvider);
     final notifier = ref.read(feedProvider.notifier);
     final bottom = MediaQuery.paddingOf(context).bottom + kTabBarSpace;
+    final channel = post.channel;
 
     const white = CupertinoColors.white;
 
@@ -47,7 +47,7 @@ class _ReelPage extends ConsumerWidget {
       child: Stack(
         fit: StackFit.expand,
         children: [
-          FeedImage(url: post.imageUrl),
+          FeedImage(urls: post.imageUrls),
           const DecoratedBox(
             decoration: BoxDecoration(
               gradient: LinearGradient(
@@ -72,8 +72,10 @@ class _ReelPage extends ConsumerWidget {
                   size: 48,
                   onTap: () => notifier.toggleLike(post.id),
                 ),
-                Text("${post.likes}",
-                    style: const TextStyle(color: white, fontSize: 12)),
+                Text(
+                  formatCount(post.likes),
+                  style: const TextStyle(color: white, fontSize: 12),
+                ),
                 const SizedBox(height: 14),
                 FeedIconButton(
                   icon: CupertinoIcons.chat_bubble,
@@ -81,8 +83,10 @@ class _ReelPage extends ConsumerWidget {
                   size: 48,
                   onTap: () => openComments(context, post.id),
                 ),
-                Text("${post.comments.length}",
-                    style: const TextStyle(color: white, fontSize: 12)),
+                Text(
+                  "${post.comments.length}",
+                  style: const TextStyle(color: white, fontSize: 12),
+                ),
                 const SizedBox(height: 14),
                 FeedIconButton(
                   icon: CupertinoIcons.paperplane,
@@ -112,11 +116,11 @@ class _ReelPage extends ConsumerWidget {
               children: [
                 Row(
                   children: [
-                    GradientAvatar(name: author, size: 34),
+                    GradientAvatar(name: post.authorName, size: 34),
                     const SizedBox(width: 10),
-                    Expanded(
+                    Flexible(
                       child: Text(
-                        author,
+                        post.authorName,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
@@ -125,6 +129,14 @@ class _ReelPage extends ConsumerWidget {
                         ),
                       ),
                     ),
+                    if (channel != null && channel.verified) ...[
+                      const SizedBox(width: 4),
+                      const Icon(
+                        CupertinoIcons.checkmark_seal_fill,
+                        size: 14,
+                        color: CupertinoColors.systemBlue,
+                      ),
+                    ],
                   ],
                 ),
                 const SizedBox(height: 8),

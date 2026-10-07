@@ -37,7 +37,7 @@ class PostGrid extends StatelessWidget {
               builder: (_) => PostDetailPage(postId: post.id),
             ),
           ),
-          child: FeedImage(url: post.imageUrl),
+          child: FeedImage(urls: post.imageUrls),
         );
       },
     );

@@ -2,10 +2,11 @@ import "package:flutter/cupertino.dart";
 import "package:flutter_riverpod/flutter_riverpod.dart";
 import "package:liquid_glass_widgets/liquid_glass_widgets.dart";
 
-import "../providers/auth_controller.dart";
 import "../providers/feed_provider.dart";
+import "../providers/theme_provider.dart";
 import "../widgets/auth_background.dart";
 import "../widgets/logout_dialog.dart";
+import "../widgets/user_info_dialog.dart";
 import "new_post_page.dart";
 import "tabs/feed_tab.dart";
 import "tabs/messages_tab.dart";
@@ -72,7 +73,7 @@ class _HomePageState extends ConsumerState<HomePage> {
 
   @override
   Widget build(BuildContext context) {
-    final controller = ref.read(authControllerProvider.notifier);
+    final bool isDark = ref.watch(themeProvider) == Brightness.dark;
 
     return GlassScaffold(
       background: const AuthBackground(),
@@ -91,9 +92,16 @@ class _HomePageState extends ConsumerState<HomePage> {
               icon: const Icon(CupertinoIcons.ellipsis),
               menuItems: [
                 GlassMenuItem(
+                  icon: Icon(
+                    isDark ? CupertinoIcons.sun_max : CupertinoIcons.moon,
+                  ),
+                  title: isDark ? "Light mode" : "Dark mode",
+                  onTap: () => ref.read(themeProvider.notifier).toggle(),
+                ),
+                GlassMenuItem(
                   icon: const Icon(CupertinoIcons.person),
                   title: "Print current user",
-                  onTap: controller.printCurrentUser, // Print current user
+                  onTap: () => showCurrentUserDialog(context, ref),
                 ),
                 GlassMenuItem(
                   icon: const Icon(CupertinoIcons.lock),

@@ -20,7 +20,7 @@ class StoryViewerPage extends ConsumerStatefulWidget {
 class _StoryViewerPageState extends ConsumerState<StoryViewerPage>
     with SingleTickerProviderStateMixin {
   late final AnimationController _ctrl;
-  late final List<String> _photos;
+  late final List<List<String>> _photos;
   int _index = 0;
 
   @override
@@ -108,7 +108,7 @@ class _StoryViewerPageState extends ConsumerState<StoryViewerPage>
 
   @override
   Widget build(BuildContext context) {
-    final author = ref.watch(authorProvider);
+    final channel = widget.topic.channel;
 
     return GlassScaffold(
       background: const ColoredBox(color: Color(0xFF000000)),
@@ -128,7 +128,7 @@ class _StoryViewerPageState extends ConsumerState<StoryViewerPage>
               },
               onLongPressStart: (_) => _ctrl.stop(),
               onLongPressEnd: (_) => _ctrl.forward(),
-              child: FeedImage(key: ValueKey(_index), url: _photos[_index]),
+              child: FeedImage(urls: _photos[_index]),
             ),
           ),
           SafeArea(
@@ -141,24 +141,37 @@ class _StoryViewerPageState extends ConsumerState<StoryViewerPage>
                   const SizedBox(height: 10),
                   Row(
                     children: [
-                      GradientAvatar(name: author, size: 36, ring: false),
+                      GradientAvatar(
+                        name: channel.handle,
+                        size: 36,
+                        ring: false,
+                      ),
                       const SizedBox(width: 10),
                       Expanded(
-                        child: Text(
-                          author,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            color: CupertinoColors.white,
-                            fontWeight: FontWeight.w600,
-                          ),
+                        child: Row(
+                          children: [
+                            Flexible(
+                              child: Text(
+                                channel.handle,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                  color: CupertinoColors.white,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                            if (channel.verified) ...[
+                              const SizedBox(width: 4),
+                              const Icon(
+                                CupertinoIcons.checkmark_seal_fill,
+                                size: 14,
+                                color: CupertinoColors.systemBlue,
+                              ),
+                            ],
+                          ],
                         ),
                       ),
-                      Text(
-                        widget.topic.label,
-                        style: const TextStyle(color: Color(0xB3FFFFFF)),
-                      ),
-                      const SizedBox(width: 10),
                       GlassButton(
                         icon: const Icon(CupertinoIcons.xmark),
                         label: "Close",
